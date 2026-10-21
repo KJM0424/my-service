@@ -14,6 +14,7 @@
 - 오늘이 공휴일이면 주말 시간표를 자동 선택하고 다음 공휴일 D-day를 보여 준다 (Nager.Date)
 - 서울 날씨·12시간 예보·미세먼지(환경부 기준)를 보고 우산·마스크·겉옷 안내를 띄운다
 - 같은 역 시간표는 하루 한 번만 부르고 브라우저에 저장해 API 호출을 아낀다
+- **목적지까지 다시 찾기**: 목적지를 저장해 두고, 열차가 늦거나 길을 바꿔야 할 때 버튼을 누르면 지금 위치(브라우저 위치 기능)를 출발지로 네이버 지도 앱·카카오맵 대중교통 길찾기를 바로 열어 준다. 지도에 지금 위치와 목적지를 표시한다
 
 ## 실행 방법
 1. 공공데이터포털에서 [서울교통공사_열차시간표](https://www.data.go.kr/data/15143847/openapi.do) 활용신청 → 마이페이지에서 **일반 인증키(Decoding)** 복사
@@ -63,3 +64,19 @@
 | ④ 응답 모양 | `[ { date, localName, name } ]` |
 | ⑤ 키 | 필요 없음 |
 | ⑥ 규칙 | 무료, 한국어 이름은 `localName` |
+
+### Nominatim (OpenStreetMap 장소 검색·역지오코딩)
+| 칸 | 내용 |
+|---|---|
+| ① 기본 주소 | `https://nominatim.openstreetmap.org/` |
+| ② 메뉴 | `search` (이름 → 좌표), `reverse` (좌표 → 주소) |
+| ③ 옵션 | `q` 또는 `lat`·`lon`, `format=jsonv2`, `countrycodes=kr`, `accept-language=ko` |
+| ④ 응답 모양 | `[ { name, lat, lon, address: { city, borough, suburb } } ]` |
+| ⑤ 키 | 필요 없음 |
+| ⑥ 규칙 | 초당 1회 이하, 출처 "© OpenStreetMap contributors" 표기. 지도 타일(`tile.openstreetmap.org`)도 같은 출처 표기 |
+
+### 길찾기 링크 (API 호출 아님, 주소 형식)
+| 대상 | 형식 |
+|---|---|
+| 네이버 지도 앱 | `nmap://route/public?slat=&slng=&sname=&dlat=&dlng=&dname=&appname=` |
+| 카카오맵 | `https://map.kakao.com/link/by/traffic/{이름},{위도},{경도}/{이름},{위도},{경도}` |

@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light dark">
   <title>출근길 · 지하철 시간표와 날씨</title>
+  <!-- 지도 라이브러리 (Leaflet, 키 없음). 못 불러와도 나머지 화면은 동작해요 -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
   <style>
     :root {
       --bg: #f3f4f7;
@@ -175,6 +177,33 @@
     .empty { text-align: center; padding: 28px 12px; color: var(--sub); }
     .empty .ic { font-size: 32px; }
 
+    .reroute-link { display: inline-block; margin-top: 6px; margin-left: 12px; background: none; border: 0; padding: 4px 0; color: var(--sub); cursor: pointer; font-size: 13px; text-decoration: underline; }
+
+    /* ── 목적지까지 다시 찾기 ── */
+    .dest-now { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 12px; background: var(--surface-2); }
+    .dest-now .pin { font-size: 20px; }
+    .dest-now .nm { font-weight: 700; }
+    .dest-now .ad { font-size: 12px; color: var(--muted); }
+    .dest-now button { margin-left: auto; }
+    .dest-form { display: flex; gap: 8px; }
+    .dest-form .field { flex: 1; }
+    .places { list-style: none; margin: 8px 0 0; padding: 0; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+    .places li + li { border-top: 1px solid var(--line); }
+    .places button { width: 100%; text-align: left; padding: 10px 14px; background: var(--surface); border: 0; cursor: pointer; }
+    .places button:hover { background: var(--surface-2); }
+    .places small { display: block; color: var(--muted); font-size: 12px; }
+    .reroute { margin-top: 12px; width: 100%; }
+    .route-out { margin-top: 12px; }
+    .route-sum { display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px; align-items: center; font-size: 14px; }
+    .route-sum .arrow { color: var(--muted); }
+    .route-sum b { display: block; }
+    .route-sum small { color: var(--muted); font-size: 12px; }
+    .route-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+    .route-btns a { display: grid; place-items: center; text-decoration: none; text-align: center; height: auto; min-height: 48px; padding: 8px 12px; line-height: 1.3; }
+    .naver { background: #03c75a !important; }
+    .kakao { background: #fee500 !important; color: #191919 !important; }
+    #map { height: 240px; border-radius: 12px; margin-top: 12px; border: 1px solid var(--line); z-index: 0; }
+
     /* ── 날씨 ── */
     .wx { display: flex; align-items: center; gap: 14px; }
     .wx .ic { font-size: 46px; line-height: 1; }
@@ -262,6 +291,15 @@
             <p>호선과 역을 고르면 지금 이후 열차가 여기에 나와요</p>
           </div>
         </section>
+
+        <!-- 목적지까지 다시 찾기 -->
+        <section class="card" id="routeCard" aria-labelledby="routeTitle" style="margin-top:16px">
+          <h2 class="card-title" id="routeTitle">목적지까지 다시 찾기 <span class="muted">열차가 늦거나 길을 바꿔야 할 때</span></h2>
+          <div id="destBox"></div>
+          <button class="btn reroute" type="button" id="rerouteBtn">📍 지금 위치에서 다시 찾기</button>
+          <div class="route-out" id="routeBox" aria-live="polite"></div>
+          <div id="map" hidden></div>
+        </section>
       </main>
 
       <aside class="side">
@@ -290,6 +328,7 @@
       <p>Weather data by <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo.com</a> · 날씨·대기질은 서울시청 좌표 기준 모델 값이에요</p>
       <p>열차시간표: <a href="https://www.data.go.kr/data/15143847/openapi.do" target="_blank" rel="noopener">공공데이터포털 · 서울교통공사_열차시간표</a> · 서울교통공사 운영 구간(1~9호선)만 있어요</p>
       <p>공휴일: <a href="https://date.nager.at/" target="_blank" rel="noopener">Nager.Date</a></p>
+      <p>지도·장소 검색: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (Nominatim) · 경로 계산은 네이버 지도·카카오맵 앱에서 해요</p>
       <p>시간표는 정해진 운행 계획이에요. 지연·운휴는 반영되지 않아요</p>
     </footer>
   </div>
@@ -302,6 +341,7 @@
 
   <!-- 인증키 파일: 없으면 화면에서 입력받아요 (config.js 는 git 에 올라가지 않음) -->
   <script src="config.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
   <script>
     // ───────────────── API 주소는 여기 한 곳에만 ─────────────────
     const SEOUL = { lat: 37.5665, lon: 126.978 };
@@ -310,6 +350,11 @@
       air:      "https://air-quality-api.open-meteo.com/v1/air-quality",  // 🔌 Open-Meteo 대기질 (키 없음)
       holidays: "https://date.nager.at/api/v3/PublicHolidays",            // 🔌 Nager.Date 공휴일 (키 없음) — 뒤에 /연도/KR
       subway:   "https://apis.data.go.kr/B553766/schedule/getTrainSch",   // 🔌 공공데이터포털 서울교통공사 열차시간표 (인증키 필요)
+      place:    "https://nominatim.openstreetmap.org/search",             // 🔌 Nominatim 장소 검색 (키 없음, 초당 1회)
+      reverse:  "https://nominatim.openstreetmap.org/reverse",            // 🔌 Nominatim 좌표 → 동네 이름 (키 없음)
+      tiles:    "https://tile.openstreetmap.org/{z}/{x}/{y}.png",         // 🔌 OpenStreetMap 지도 타일 (키 없음)
+      naverApp: "nmap://route/public",                                    // 🔌 네이버 지도 앱 대중교통 길찾기 (URL 스킴)
+      kakaoWeb: "https://map.kakao.com/link/by/traffic",                  // 🔌 카카오맵 대중교통 길찾기 링크
     };
 
     const LINES = {
@@ -318,7 +363,7 @@
     };
     // 2호선은 순환선이라 상행/하행 대신 내선/외선을 써요
     const directionsOf = (line) => line === "2호선" ? ["내선", "외선"] : ["상행", "하행"];
-    const STORE = { key: "myservice_data_go_kr_key", fav: "myservice_fav", recent: "myservice_recent", walk: "myservice_walk", cache: "myservice_tt:" };
+    const STORE = { key: "myservice_data_go_kr_key", fav: "myservice_fav", recent: "myservice_recent", walk: "myservice_walk", cache: "myservice_tt:", dest: "myservice_dest", dests: "myservice_dests" };
 
     // ───────────────── 공통 유틸 ─────────────────
     const $ = (id) => document.getElementById(id);
@@ -353,13 +398,13 @@
 
     // API 상자 (같은 이름이면 최신 주소로 덮어써요)
     const apiCalls = new Map();
-    function logApi(name, url, ok, note) {
-      apiCalls.set(name, { url, ok, note });
+    function logApi(name, url, ok, note, linkText = "새 탭에서 원본 JSON 보기") {
+      apiCalls.set(name, { url, ok, note, linkText });
       $("apiList").innerHTML = [...apiCalls.entries()].map(([n, c]) => `
         <li>
           <b>${esc(n)}</b> · <span class="${c.ok ? "ok" : "ng"}">${c.ok ? "성공" : "실패"}</span>${c.note ? ` · ${esc(c.note)}` : ""}
           <code>${esc(maskKey(c.url))}</code>
-          <a href="${esc(c.url)}" target="_blank" rel="noopener">새 탭에서 원본 JSON 보기</a>
+          ${/^https?:/.test(c.url) ? `<a href="${esc(c.url)}" target="_blank" rel="noopener">${esc(c.linkText)}</a>` : ""}
         </li>`).join("");
     }
 
@@ -746,6 +791,7 @@
           ${more ? `<ul class="more">${more}</ul>` : ""}
           ${destHtml}
           <button type="button" class="linkbtn" data-all="${esc(r.dir)}" aria-expanded="${open}">${open ? "전체 시간표 접기" : `전체 시간표 보기 (${trains.length}대)`}</button>
+          <button type="button" class="reroute-link" data-reroute>열차가 안 와요? 지금 위치에서 다시 찾기</button>
           ${tt}
         </article>`;
     }
@@ -799,6 +845,194 @@
       box.querySelectorAll("[data-pick]").forEach((b) => (b.onclick = () => { state.pick = b.dataset.pick; state.dest = {}; renderResult(); }));
       box.querySelectorAll("[data-dest]").forEach((b) => (b.onclick = () => { state.dest[b.dataset.dir] = b.dataset.dest; renderResult(); }));
       box.querySelectorAll("[data-all]").forEach((b) => (b.onclick = () => { state.showAll[b.dataset.all] = !state.showAll[b.dataset.all]; renderResult(); }));
+      box.querySelectorAll("[data-reroute]").forEach((b) => (b.onclick = () => {
+        $("routeCard").scrollIntoView({ behavior: "smooth", block: "start" });
+        reroute();
+      }));
+    }
+
+    // ───────────────── 목적지까지 다시 찾기 ─────────────────
+    // 경로 계산은 네이버 지도·카카오맵이 해요. 이 화면은 "지금 위치 → 저장한 목적지"를 넘겨 줘요
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const isAndroid = /Android/i.test(navigator.userAgent);
+    const cleanName = (s) => String(s || "").replace(/[,/]/g, " ").trim().slice(0, 40) || "위치";
+    const shortAddr = (a = {}) => [a.city || a.province, a.borough || a.city_district || a.county, a.suburb || a.quarter || a.neighbourhood || a.town || a.village]
+      .filter(Boolean).filter((v, i, arr) => arr.indexOf(v) === i).join(" ");
+
+    function distanceKm(a, b) {
+      const R = 6371, rad = Math.PI / 180;
+      const dLat = (b.lat - a.lat) * rad, dLon = (b.lon - a.lon) * rad;
+      const h = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * rad) * Math.cos(b.lat * rad) * Math.sin(dLon / 2) ** 2;
+      return 2 * R * Math.asin(Math.sqrt(h));
+    }
+
+    let placeResults = [];
+    function renderDest(editing = false) {
+      const dest = store.get(STORE.dest, null);
+      const saved = store.get(STORE.dests, []).filter((d) => !dest || d.name !== dest.name);
+      let html = "";
+      if (dest && !editing) {
+        html = `<div class="dest-now"><span class="pin" aria-hidden="true">🏁</span>
+            <div><div class="nm">${esc(dest.name)}</div><div class="ad">${esc(dest.addr || "")}</div></div>
+            <button type="button" class="icon-btn" id="destEdit">목적지 바꾸기</button></div>`;
+      } else {
+        html = `<form class="dest-form" id="destForm">
+            <input class="field" type="text" id="destInput" placeholder="목적지 검색 (예: 판교역, 서울시청)" aria-label="목적지 검색" autocomplete="off" required>
+            <button class="btn ghost" type="submit">찾기</button>
+          </form>
+          ${placeResults.length ? `<ul class="places">${placeResults.map((p, i) =>
+            `<li><button type="button" data-place="${i}">${esc(p.name)}<small>${esc(p.addr)}</small></button></li>`).join("")}</ul>` : ""}
+          ${dest ? `<button type="button" class="linkbtn" id="destCancel">취소</button>` : ""}`;
+      }
+      if (saved.length) {
+        html += `<div class="quick"><span class="label">저장한 목적지</span>${saved.map((d, i) =>
+          `<button type="button" class="q" data-saved="${i}">🏁 ${esc(d.name)}</button>`).join("")}</div>`;
+      }
+      $("destBox").innerHTML = html;
+
+      $("destEdit") && ($("destEdit").onclick = () => { placeResults = []; renderDest(true); $("destInput").focus(); });
+      $("destCancel") && ($("destCancel").onclick = () => { placeResults = []; renderDest(); });
+      $("destForm") && ($("destForm").onsubmit = (ev) => { ev.preventDefault(); searchPlace($("destInput").value.trim()); });
+      $("destBox").querySelectorAll("[data-place]").forEach((b) => (b.onclick = () => setDest(placeResults[+b.dataset.place])));
+      $("destBox").querySelectorAll("[data-saved]").forEach((b) => (b.onclick = () => setDest(saved[+b.dataset.saved])));
+    }
+
+    function setDest(p) {
+      store.set(STORE.dest, p);
+      store.set(STORE.dests, [p, ...store.get(STORE.dests, []).filter((d) => d.name !== p.name)].slice(0, 4));
+      placeResults = [];
+      renderDest();
+      $("routeBox").innerHTML = "";
+      showMap(null, p);
+      toast(`목적지를 ${p.name}(으)로 정했어요`);
+    }
+
+    async function searchPlace(q) {
+      if (!q) return;
+      const url = buildUrl(API.place, { q, format: "jsonv2", countrycodes: "kr", "accept-language": "ko", limit: 5, addressdetails: 1 });
+      $("destBox").insertAdjacentHTML("beforeend", `<p class="loading" id="placeLoading">장소를 찾는 중이에요…</p>`);
+      try {
+        const list = await getJson(url);
+        logApi("장소 검색 (Nominatim)", url, true, `${list.length}곳`);
+        placeResults = list.map((x) => ({ name: x.name || q, addr: shortAddr(x.address) || x.display_name, lat: +x.lat, lon: +x.lon }));
+        renderDest(true);
+        $("destInput").value = q;
+        if (!list.length) $("destBox").insertAdjacentHTML("beforeend", `<p class="muted">"${esc(q)}"을(를) 찾지 못했어요. 역 이름이나 건물 이름으로 다시 찾아보세요</p>`);
+      } catch (e) {
+        logApi("장소 검색 (Nominatim)", url, false, e.message);
+        $("placeLoading")?.remove();
+        $("destBox").insertAdjacentHTML("beforeend", errorHtml("장소를 찾지 못했어요", e.message));
+      }
+    }
+
+    function getPosition() {
+      return new Promise((resolve, reject) => {
+        if (!window.isSecureContext) return reject(new Error("위치는 https 주소나 Live Server(localhost)에서만 쓸 수 있어요"));
+        if (!navigator.geolocation) return reject(new Error("이 브라우저는 위치 기능을 지원하지 않아요"));
+        navigator.geolocation.getCurrentPosition(
+          (p) => resolve({ lat: p.coords.latitude, lon: p.coords.longitude, acc: Math.round(p.coords.accuracy) }),
+          (e) => reject(new Error(
+            e.code === 1 ? "위치 권한이 꺼져 있어요. 브라우저 주소창의 자물쇠 아이콘에서 위치를 허용해 주세요" :
+            e.code === 3 ? "위치를 찾는 데 시간이 너무 걸려요. 잠시 후 다시 눌러 주세요" :
+            "지금 위치를 찾지 못했어요")),
+          { enableHighAccuracy: true, timeout: 12000, maximumAge: 30000 });
+      });
+    }
+
+    async function placeName(pos) {
+      const url = buildUrl(API.reverse, { lat: pos.lat.toFixed(6), lon: pos.lon.toFixed(6), format: "jsonv2", "accept-language": "ko", zoom: 16 });
+      try {
+        const d = await getJson(url);
+        logApi("동네 이름 (Nominatim)", url, true);
+        return shortAddr(d.address) || d.name || "현재 위치";
+      } catch (e) {
+        logApi("동네 이름 (Nominatim)", url, false, e.message);
+        return "현재 위치";
+      }
+    }
+
+    function routeLinks(from, to) {
+      const appname = location.protocol.startsWith("http") ? location.origin + location.pathname : "my-service";
+      const naver = `${API.naverApp}?` + new URLSearchParams({
+        slat: from.lat, slng: from.lon, sname: from.name, dlat: to.lat, dlng: to.lon, dname: to.name, appname,
+      });
+      // 안드로이드는 intent 주소로 열면 앱이 없을 때 플레이스토어로 가요
+      const naverAndroid = `intent://route/public?${naver.split("?")[1]}#Intent;scheme=nmap;package=com.nhn.android.nmap;end`;
+      const kakao = `${API.kakaoWeb}/${encodeURIComponent(cleanName(from.name))},${from.lat},${from.lon}/${encodeURIComponent(cleanName(to.name))},${to.lat},${to.lon}`;
+      return { naver: isAndroid ? naverAndroid : naver, kakao };
+    }
+
+    let rerouting = false;
+    async function reroute() {
+      const dest = store.get(STORE.dest, null);
+      if (!dest) {
+        $("routeBox").innerHTML = `<p class="muted">먼저 목적지를 정해 주세요</p>`;
+        renderDest(true);
+        $("destInput")?.focus();
+        return;
+      }
+      if (rerouting) return;
+      rerouting = true;
+      $("rerouteBtn").disabled = true;
+      $("routeBox").innerHTML = `<p class="loading">지금 위치를 찾는 중이에요…</p>`;
+      try {
+        const pos = await getPosition();
+        const name = await placeName(pos);
+        const from = { ...pos, name };
+        const km = distanceKm(from, dest);
+        const links = routeLinks(from, dest);
+        logApi("대중교통 길찾기 (네이버 지도 앱)", links.naver, true, "버튼을 누르면 앱이 열려요");
+        logApi("대중교통 길찾기 (카카오맵)", links.kakao, true, "버튼을 누르면 열려요", "새 탭에서 길찾기 열기");
+        const now = new Date();
+        $("routeBox").innerHTML = `
+          <div class="route-sum">
+            <div><small>출발 · ${pad(now.getHours())}:${pad(now.getMinutes())} 기준</small><b>${esc(name)}</b><small>오차 약 ${pos.acc}m</small></div>
+            <div class="arrow" aria-hidden="true">→</div>
+            <div><small>도착</small><b>${esc(dest.name)}</b><small>직선거리 ${km < 1 ? Math.round(km * 1000) + "m" : km.toFixed(1) + "km"}</small></div>
+          </div>
+          <div class="route-btns">
+            <a class="btn naver" id="naverBtn" href="${esc(links.naver)}">네이버 지도 앱으로<br>경로 다시 보기</a>
+            <a class="btn kakao" href="${esc(links.kakao)}" target="_blank" rel="noopener">카카오맵으로<br>경로 다시 보기</a>
+          </div>
+          <p class="muted" style="margin:8px 0 0">${isMobile
+            ? "지금 위치를 출발지로 해서 지도 앱이 실시간 교통을 반영해 최적 경로를 다시 계산해요"
+            : "네이버 지도 앱 버튼은 휴대폰에서 열려요. PC에서는 카카오맵 버튼을 써 주세요"}</p>`;
+        if (!isAndroid) {
+          $("naverBtn").addEventListener("click", () => {
+            // 앱이 없으면 화면이 그대로 남아 있어요 → 안내
+            setTimeout(() => { if (document.visibilityState === "visible") toast("네이버 지도 앱이 안 열리면 카카오맵 버튼을 써 보세요"); }, 1800);
+          });
+        }
+        showMap(from, dest);
+      } catch (e) {
+        $("routeBox").innerHTML = errorHtml("지금 위치에서 다시 찾지 못했어요", e.message);
+      } finally {
+        rerouting = false;
+        $("rerouteBtn").disabled = false;
+      }
+    }
+
+    let map, layer;
+    function showMap(from, dest) {
+      if (!window.L) return; // 지도 라이브러리를 못 불러오면 지도만 빼고 보여 줘요
+      $("map").hidden = false;
+      if (!map) {
+        map = L.map("map", { zoomControl: true, attributionControl: true });
+        L.tileLayer(API.tiles, { maxZoom: 19, attribution: "© OpenStreetMap contributors" }).addTo(map);
+        layer = L.layerGroup().addTo(map);
+        logApi("지도 타일 (OpenStreetMap)", API.tiles.replace("{z}/{x}/{y}", "12/3493/1586"), true, "이미지", "새 탭에서 타일 한 장 보기");
+      }
+      layer.clearLayers();
+      const pts = [];
+      if (dest) { L.marker([dest.lat, dest.lon], { title: dest.name }).addTo(layer).bindTooltip(`도착 · ${dest.name}`); pts.push([dest.lat, dest.lon]); }
+      if (from) {
+        L.circleMarker([from.lat, from.lon], { radius: 8, color: "#fff", weight: 3, fillColor: "#2563eb", fillOpacity: 1 }).addTo(layer).bindTooltip("지금 위치");
+        pts.push([from.lat, from.lon]);
+        if (dest) L.polyline(pts, { color: "#2563eb", weight: 2, dashArray: "6 6" }).addTo(layer);
+      }
+      if (pts.length > 1) map.fitBounds(pts, { padding: [30, 30] });
+      else if (pts.length) map.setView(pts[0], 15);
+      setTimeout(() => map.invalidateSize(), 50);
     }
 
     async function search() {
@@ -838,6 +1072,9 @@
     $("searchForm").addEventListener("submit", (ev) => { ev.preventDefault(); search(); });
     $("dayKind").addEventListener("change", () => { $("dayKind").dataset.touched = "1"; });
     $("openKey").onclick = () => { renderKey(); $("keyDialog").showModal(); };
+    $("rerouteBtn").onclick = reroute;
+    renderDest();
+    if (store.get(STORE.dest, null)) showMap(null, store.get(STORE.dest, null));
 
     cleanOldCache();
     renderKey();
