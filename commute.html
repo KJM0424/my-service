@@ -3,190 +3,304 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>출근 도우미 · 지하철 시간표 + 날씨</title>
+  <meta name="color-scheme" content="light dark">
+  <title>출근길 · 지하철 시간표와 날씨</title>
   <style>
     :root {
-      --bg: #f5f6f8;
-      --card: #ffffff;
-      --line: #e4e6ea;
-      --text: #1b1d22;
-      --sub: #5c6270;
-      --muted: #8a909c;
-      --brand: #0066ff;
-      --brand-soft: #e8f0ff;
-      --danger: #d93025;
-      --danger-soft: #fdecea;
-      --good: #1a8f4a;
-      --warn: #c77700;
-      --radius: 14px;
+      --bg: #f3f4f7;
+      --surface: #ffffff;
+      --surface-2: #f7f8fa;
+      --line: #e3e5ea;
+      --text: #15171c;
+      --sub: #535a68;
+      --muted: #8b919d;
+      --brand: #2563eb;
+      --brand-soft: #e7eefe;
+      --danger: #d4372c;
+      --danger-soft: #fdeceb;
+      --good: #138a4a;
+      --warn: #c26a00;
+      --line-color: var(--brand);
+      --radius: 18px;
+      --shadow: 0 1px 2px rgba(16, 24, 40, .04), 0 4px 16px rgba(16, 24, 40, .04);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0f1115;
+        --surface: #171a20;
+        --surface-2: #1e222a;
+        --line: #2a2f39;
+        --text: #eceef2;
+        --sub: #a8afbc;
+        --muted: #737b89;
+        --brand: #5b8cff;
+        --brand-soft: #1d2a48;
+        --danger: #ff6b5f;
+        --danger-soft: #3a1d1b;
+        --good: #3ecf7f;
+        --warn: #f2a33a;
+        --shadow: none;
+      }
     }
     * { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
     body {
       margin: 0;
       background: var(--bg);
       color: var(--text);
-      font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", "Noto Sans KR", "Malgun Gothic", sans-serif;
+      font-family: "Pretendard", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif;
       font-size: 15px;
       line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
     }
     a { color: var(--brand); }
-    .wrap { max-width: 960px; margin: 0 auto; padding: 24px 16px 48px; }
-    header.top { margin-bottom: 20px; }
-    header.top a.back { font-size: 13px; color: var(--sub); text-decoration: none; }
-    h1 { font-size: 26px; margin: 6px 0 4px; letter-spacing: -0.02em; }
-    .lead { color: var(--sub); margin: 0; }
-    .card {
-      background: var(--card);
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-      padding: 20px;
-      margin-bottom: 16px;
+    button, input, select { font: inherit; color: inherit; }
+    :focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+    .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+    /* ── 상단 바 ── */
+    .topbar {
+      position: sticky; top: 0; z-index: 10;
+      background: color-mix(in srgb, var(--bg) 88%, transparent);
+      backdrop-filter: saturate(1.4) blur(8px);
+      border-bottom: 1px solid var(--line);
     }
-    .card h2 { font-size: 17px; margin: 0 0 12px; }
+    .topbar .in { max-width: 1080px; margin: 0 auto; padding: 0 16px; height: 56px; display: flex; align-items: center; gap: 12px; }
+    .logo { font-weight: 800; font-size: 18px; letter-spacing: -0.02em; text-decoration: none; color: var(--text); display: flex; align-items: center; gap: 8px; }
+    .logo i { width: 22px; height: 22px; border-radius: 7px; background: var(--brand); display: grid; place-items: center; color: #fff; font-style: normal; font-size: 12px; }
+    .topbar .spacer { flex: 1; }
+    .icon-btn {
+      height: 36px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--line);
+      background: var(--surface); cursor: pointer; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px;
+      text-decoration: none; color: var(--text);
+    }
+    .icon-btn:hover { background: var(--surface-2); }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+    .dot.ok { background: var(--good); }
+    .dot.no { background: var(--danger); }
+
+    .wrap { max-width: 1080px; margin: 0 auto; padding: 20px 16px 56px; }
+
+    /* ── 인사 영역 ── */
+    .hello { margin: 4px 0 18px; }
+    .hello h1 { font-size: 26px; line-height: 1.3; margin: 0 0 8px; letter-spacing: -0.03em; }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .chip {
+      display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px;
+      border-radius: 999px; background: var(--surface); border: 1px solid var(--line); font-size: 13px; color: var(--sub);
+    }
+    .chip b { color: var(--text); font-weight: 700; }
+
+    .layout { display: grid; gap: 16px; grid-template-columns: 1fr; }
+    .layout > * { min-width: 0; }
+    @media (min-width: 900px) { .layout { grid-template-columns: minmax(0, 1fr) 340px; align-items: start; } .side { position: sticky; top: 72px; } }
+
+    .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; box-shadow: var(--shadow); }
+    .card + .card { margin-top: 16px; }
+    .card-title { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 12px; font-size: 15px; font-weight: 700; }
     .muted { color: var(--muted); font-size: 13px; }
-    .loading { color: var(--sub); }
-    .error {
-      background: var(--danger-soft);
-      color: var(--danger);
-      border-radius: 10px;
-      padding: 12px 14px;
-      font-size: 14px;
-    }
-    .error b { display: block; margin-bottom: 2px; }
+    .loading { color: var(--sub); display: flex; align-items: center; gap: 8px; }
+    .loading::before { content: ""; width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--line); border-top-color: var(--brand); animation: spin .8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .error { background: var(--danger-soft); color: var(--danger); border-radius: 12px; padding: 12px 14px; font-size: 14px; }
+    .error b { display: block; }
 
-    /* 날씨 */
-    .weather-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
-    .wx-main { display: flex; align-items: center; gap: 14px; }
-    .wx-icon { font-size: 44px; line-height: 1; }
-    .wx-temp { font-size: 32px; font-weight: 700; }
-    .pills { display: flex; flex-wrap: wrap; gap: 8px; }
-    .pill {
-      display: inline-flex; align-items: center; gap: 6px;
-      padding: 6px 12px; border-radius: 999px;
-      background: var(--bg); font-size: 13px;
+    /* ── 검색 ── */
+    .search { display: grid; gap: 8px; grid-template-columns: 110px 1fr; }
+    .search .day { grid-column: 1; }
+    .search .go { grid-column: 2; }
+    @media (min-width: 640px) { .search { grid-template-columns: 120px 1fr 100px auto; } .search .day, .search .go { grid-column: auto; } }
+    .field {
+      height: 48px; padding: 0 14px; border: 1px solid var(--line); border-radius: 12px;
+      background: var(--surface-2); min-width: 0; width: 100%;
     }
-    .tips { margin: 0; padding-left: 18px; }
-    .tips li { margin: 2px 0; }
-    .g-good { color: var(--good); font-weight: 700; }
-    .g-normal { color: var(--brand); font-weight: 700; }
-    .g-bad { color: var(--warn); font-weight: 700; }
-    .g-worst { color: var(--danger); font-weight: 700; }
+    .field:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-soft); background: var(--surface); }
+    .btn {
+      height: 48px; padding: 0 20px; border-radius: 12px; border: 0; cursor: pointer; font-weight: 700;
+      background: var(--brand); color: #fff; white-space: nowrap;
+    }
+    .btn:hover { filter: brightness(.94); }
+    .btn.ghost { background: var(--surface-2); color: var(--text); border: 1px solid var(--line); }
+    .quick { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+    .quick .label { font-size: 12px; color: var(--muted); margin-right: 2px; }
+    .q {
+      height: 32px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface);
+      cursor: pointer; font-size: 13px; display: inline-flex; align-items: center; gap: 6px;
+    }
+    .q:hover { border-color: var(--muted); }
+    .q .ln { width: 18px; height: 18px; border-radius: 50%; color: #fff; font-size: 10px; font-weight: 800; display: grid; place-items: center; }
+    .walk { margin-top: 12px; display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--sub); flex-wrap: wrap; }
+    .walk input { width: 64px; height: 32px; padding: 0 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface-2); text-align: center; }
 
-    /* 키 설정 */
-    .key-row { display: flex; gap: 8px; flex-wrap: wrap; }
-    input, select, button { font: inherit; }
-    input[type="text"], input[type="password"], select {
-      height: 44px; padding: 0 12px;
-      border: 1px solid var(--line); border-radius: 10px; background: #fff;
-      min-width: 0;
-    }
-    input:focus, select:focus, button:focus-visible { outline: 2px solid var(--brand); outline-offset: 1px; }
-    button {
-      height: 44px; padding: 0 16px; border-radius: 10px; border: 1px solid var(--line);
-      background: #fff; cursor: pointer; font-weight: 600;
-    }
-    button.primary { background: var(--brand); color: #fff; border-color: var(--brand); }
-    button.primary:hover { filter: brightness(0.92); }
-    #keyInput { flex: 1 1 260px; }
+    /* ── 역 헤더 ── */
+    .stn-head { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+    .ln-badge { min-width: 44px; height: 28px; padding: 0 10px; border-radius: 999px; background: var(--line-color); color: #fff; font-weight: 800; font-size: 13px; display: grid; place-items: center; }
+    .stn-name { font-size: 24px; font-weight: 800; letter-spacing: -0.03em; }
+    .stn-head .acts { margin-left: auto; display: flex; gap: 6px; }
+    .star.on { color: #f5a400; border-color: #f5a400; }
+    .stations { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+    .stations button { height: 32px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); cursor: pointer; font-size: 13px; }
+    .stations button.on { background: var(--text); color: var(--bg); border-color: var(--text); }
 
-    /* 시간표 */
-    .search { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
-    .search .full { grid-column: 1 / -1; }
-    .stations { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 12px; }
-    .stations button { height: 34px; padding: 0 12px; border-radius: 999px; font-size: 13px; font-weight: 500; }
-    .stations button.on { background: var(--text); color: #fff; border-color: var(--text); }
-    .dirs { display: grid; grid-template-columns: 1fr; gap: 12px; }
-    .dir { border: 1px solid var(--line); border-radius: 12px; padding: 14px; }
-    .dir h3 { margin: 0 0 8px; font-size: 15px; }
-    .next { list-style: none; margin: 0 0 10px; padding: 0; }
-    .next li {
-      display: flex; justify-content: space-between; align-items: baseline;
-      padding: 8px 10px; border-radius: 8px; background: var(--brand-soft); margin-bottom: 6px;
-    }
-    .next li:first-child { background: var(--brand); color: #fff; }
-    .next .time { font-size: 18px; font-weight: 700; }
-    .next .to { font-size: 13px; }
-    .next .in { font-size: 12px; opacity: 0.85; }
-    .tag-exp { font-size: 11px; font-weight: 700; padding: 1px 6px; border-radius: 4px; background: var(--danger); color: #fff; margin-left: 4px; }
-    details summary { cursor: pointer; color: var(--sub); font-size: 13px; }
-    .hours { margin-top: 8px; font-size: 13px; max-height: 320px; overflow: auto; }
-    .hours div { display: flex; gap: 8px; padding: 3px 0; border-bottom: 1px dashed var(--line); }
-    .hours b { width: 28px; flex: none; }
-    .hours span { color: var(--sub); }
+    /* ── 방향 카드 ── */
+    .dirs { display: grid; gap: 12px; grid-template-columns: 1fr; }
+    @media (min-width: 640px) { .dirs { grid-template-columns: 1fr 1fr; } }
+    .dir { border: 1px solid var(--line); border-radius: 16px; padding: 16px; background: var(--surface); position: relative; overflow: hidden; }
+    .dir::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 4px; background: var(--line-color); }
+    .dir-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 10px; }
+    .dir-name { font-weight: 800; font-size: 16px; }
+    .eta { display: flex; align-items: flex-end; gap: 10px; margin: 4px 0 2px; }
+    .eta .big { font-size: 44px; font-weight: 800; line-height: 1; letter-spacing: -0.04em; font-variant-numeric: tabular-nums; }
+    .eta .unit { font-size: 16px; font-weight: 700; color: var(--sub); padding-bottom: 4px; }
+    .eta .soon { font-size: 30px; font-weight: 800; color: var(--danger); line-height: 1.2; }
+    .eta-meta { font-size: 14px; color: var(--sub); }
+    .eta-meta b { color: var(--text); font-variant-numeric: tabular-nums; }
+    .exp { font-size: 11px; font-weight: 800; padding: 2px 6px; border-radius: 5px; background: var(--danger); color: #fff; vertical-align: 1px; }
+    .leave { margin-top: 10px; padding: 10px 12px; border-radius: 10px; background: var(--brand-soft); font-size: 13px; }
+    .leave b { font-variant-numeric: tabular-nums; }
+    .more { list-style: none; margin: 12px 0 0; padding: 0; border-top: 1px solid var(--line); }
+    .more li { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 14px; font-variant-numeric: tabular-nums; }
+    .more li span:last-child { color: var(--muted); }
+    .dests { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 12px; }
+    .dests button { height: 28px; padding: 0 10px; border-radius: 999px; border: 1px solid var(--line); background: transparent; cursor: pointer; font-size: 12px; color: var(--sub); }
+    .dests button.on { background: var(--line-color); border-color: var(--line-color); color: #fff; }
+    .linkbtn { margin-top: 10px; background: none; border: 0; padding: 4px 0; color: var(--brand); cursor: pointer; font-size: 13px; font-weight: 600; }
+    .tt { margin-top: 8px; font-size: 13px; max-height: 300px; overflow: auto; border-radius: 10px; background: var(--surface-2); padding: 6px 10px; }
+    .tt div { display: flex; gap: 10px; padding: 4px 0; border-bottom: 1px dashed var(--line); font-variant-numeric: tabular-nums; }
+    .tt div:last-child { border-bottom: 0; }
+    .tt b { width: 22px; flex: none; color: var(--sub); }
+    .tt span { display: flex; flex-wrap: wrap; gap: 2px 8px; }
+    .tt .past { color: var(--muted); text-decoration: line-through; opacity: .6; }
+    .tt .now b { color: var(--brand); }
+    .empty { text-align: center; padding: 28px 12px; color: var(--sub); }
+    .empty .ic { font-size: 32px; }
 
-    /* API 상자 */
-    .api-box { background: #fbfbfc; }
+    /* ── 날씨 ── */
+    .wx { display: flex; align-items: center; gap: 14px; }
+    .wx .ic { font-size: 46px; line-height: 1; }
+    .wx .t { font-size: 34px; font-weight: 800; letter-spacing: -0.03em; line-height: 1.1; }
+    .strip { display: flex; gap: 6px; overflow-x: auto; margin: 14px -4px 0; padding: 0 4px 4px; scrollbar-width: thin; }
+    .strip div { flex: none; width: 52px; text-align: center; padding: 8px 0; border-radius: 12px; background: var(--surface-2); font-size: 12px; }
+    .strip .h { color: var(--muted); }
+    .strip .e { font-size: 18px; line-height: 1.5; }
+    .strip .p { color: var(--brand); font-weight: 700; }
+    .air { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .air div { padding: 12px; border-radius: 12px; background: var(--surface-2); }
+    .air .v { font-size: 20px; font-weight: 800; }
+    .g-good { color: var(--good); } .g-normal { color: var(--brand); } .g-bad { color: var(--warn); } .g-worst { color: var(--danger); }
+    .tips { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+    .tips li { display: flex; gap: 10px; align-items: center; padding: 10px 12px; border-radius: 12px; background: var(--surface-2); font-size: 14px; }
+    .tips li span:first-child { font-size: 18px; }
+
+    /* ── API 상자 · 출처 ── */
     .api-box ul { list-style: none; padding: 0; margin: 0; }
     .api-box li { padding: 10px 0; border-top: 1px solid var(--line); font-size: 13px; }
-    .api-box li:first-child { border-top: 0; }
-    .api-box code { display: block; word-break: break-all; color: var(--sub); margin: 4px 0; }
-    .source { font-size: 13px; color: var(--sub); }
-    .source p { margin: 4px 0; }
+    .api-box li:first-child { border-top: 0; padding-top: 0; }
+    .api-box code { display: block; word-break: break-all; color: var(--sub); margin: 4px 0; font-size: 12px; }
+    .ok { color: var(--good); font-weight: 700; } .ng { color: var(--danger); font-weight: 700; }
+    footer.src { margin-top: 20px; font-size: 12px; color: var(--muted); }
+    footer.src p { margin: 3px 0; }
 
-    @media (min-width: 720px) {
-      .weather-grid { grid-template-columns: 1.2fr 1fr; align-items: start; }
-      .search { grid-template-columns: 1fr 1.4fr 1fr auto; }
-      .search .full { grid-column: auto; }
-      .dirs { grid-template-columns: 1fr 1fr; }
+    /* ── 설정 대화상자 · 토스트 ── */
+    dialog { border: 1px solid var(--line); border-radius: 20px; padding: 22px; width: min(440px, calc(100% - 32px)); background: var(--surface); color: var(--text); }
+    dialog::backdrop { background: rgba(0, 0, 0, .45); }
+    dialog h2 { margin: 0 0 6px; font-size: 18px; }
+    dialog .row { display: flex; gap: 8px; margin-top: 14px; }
+    dialog .row .field { flex: 1; }
+    dialog .foot { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; gap: 8px; }
+    .toast {
+      position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 20px); opacity: 0; pointer-events: none;
+      background: #15171c; color: #fff; padding: 12px 18px; border-radius: 12px; font-size: 14px; transition: .2s; z-index: 20;
     }
+    .toast.show { opacity: 1; transform: translate(-50%, 0); }
+    @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <header class="top">
-      <a class="back" href="index.html">← 서비스 목록</a>
-      <h1>출근 도우미</h1>
-      <p class="lead">역을 고르면 지금 이후 열차와 서울 날씨·미세먼지를 한 화면에서 보여 줘요</p>
-    </header>
-
-    <main>
-      <!-- 1. 날씨 + 미세먼지 -->
-      <section class="card" aria-labelledby="wxTitle">
-        <h2 id="wxTitle">오늘 서울 날씨와 미세먼지</h2>
-        <div class="weather-grid">
-          <div id="weatherBox"><p class="loading">날씨를 불러오는 중이에요…</p></div>
-          <div id="airBox"><p class="loading">미세먼지를 불러오는 중이에요…</p></div>
-        </div>
-        <div id="tipBox" style="margin-top:14px"></div>
-      </section>
-
-      <!-- 2. 인증키 -->
-      <section class="card" id="keyCard" aria-labelledby="keyTitle">
-        <h2 id="keyTitle">공공데이터포털 인증키</h2>
-        <div id="keyStatus"></div>
-      </section>
-
-      <!-- 3. 지하철 시간표 -->
-      <section class="card" aria-labelledby="subTitle">
-        <h2 id="subTitle">지하철 시간표</h2>
-        <form class="search" id="searchForm">
-          <select id="lineSel" aria-label="호선"></select>
-          <input type="text" id="stnInput" placeholder="역 이름 (예: 강남, 시청)" aria-label="역 이름" required>
-          <select id="dayKind" aria-label="요일 구분">
-            <option value="평일">평일</option>
-            <option value="주말">주말</option>
-            <option value="공휴일">공휴일</option>
-          </select>
-          <button type="submit" class="primary full">시간표 보기</button>
-        </form>
-        <div id="subwayBox"><p class="muted">호선과 역 이름을 넣고 시간표 보기를 눌러 주세요</p></div>
-      </section>
-
-      <!-- 4. API 상자 -->
-      <section class="card api-box" aria-labelledby="apiTitle">
-        <h2 id="apiTitle">🔌 이 화면이 쓰는 API</h2>
-        <ul id="apiList"><li class="muted">아직 부른 API가 없어요</li></ul>
-      </section>
-
-      <footer class="source">
-        <p>Weather data by <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo.com</a> (날씨·대기질, 서울시청 좌표 기준)</p>
-        <p>열차시간표: <a href="https://www.data.go.kr/data/15143847/openapi.do" target="_blank" rel="noopener">공공데이터포털 · 서울교통공사_열차시간표</a> (서울교통공사 운영 구간 1~9호선)</p>
-        <p>시간표는 정해진 운행 계획이에요. 지연·운휴는 반영되지 않아요</p>
-      </footer>
-    </main>
+  <div class="topbar">
+    <div class="in">
+      <a class="logo" href="index.html"><i aria-hidden="true">🚇</i>출근길</a>
+      <span class="spacer"></span>
+      <button class="icon-btn" id="openKey" type="button"><span class="dot" id="keyDot"></span>인증키</button>
+    </div>
   </div>
 
-  <!-- 인증키 파일: 없으면 화면 입력칸을 써요 (config.js 는 git 에 올라가지 않음) -->
+  <div class="wrap">
+    <section class="hello" aria-live="polite">
+      <h1 id="greet">오늘도 출근길을 같이 챙겨요</h1>
+      <div class="chips" id="todayChips"><span class="chip">오늘 정보를 불러오는 중이에요…</span></div>
+    </section>
+
+    <div class="layout">
+      <main>
+        <!-- 검색 -->
+        <section class="card" aria-labelledby="searchTitle">
+          <h2 class="sr" id="searchTitle">역 검색</h2>
+          <form class="search" id="searchForm">
+            <select class="field" id="lineSel" aria-label="호선"></select>
+            <input class="field" type="text" id="stnInput" list="stnList" placeholder="역 이름 (예: 강남, 시청)" aria-label="역 이름" autocomplete="off" required>
+            <datalist id="stnList"></datalist>
+            <select class="field day" id="dayKind" aria-label="시간표 종류">
+              <option value="평일">평일</option>
+              <option value="주말">주말·공휴일</option>
+            </select>
+            <button class="btn go" type="submit">시간표 보기</button>
+          </form>
+          <div class="quick" id="favRow"></div>
+          <div class="quick" id="recentRow"></div>
+          <label class="walk">
+            역까지 걸어서
+            <input type="number" id="walkMin" min="0" max="60" inputmode="numeric" aria-label="역까지 걸리는 시간(분)">
+            분 · 지금 나가면 탈 수 있는 열차를 알려 줘요
+          </label>
+        </section>
+
+        <!-- 결과 -->
+        <section class="card" id="resultCard" aria-live="polite" style="margin-top:16px">
+          <div class="empty">
+            <div class="ic" aria-hidden="true">🚉</div>
+            <p>호선과 역을 고르면 지금 이후 열차가 여기에 나와요</p>
+          </div>
+        </section>
+      </main>
+
+      <aside class="side">
+        <section class="card" aria-labelledby="wxTitle">
+          <h2 class="card-title" id="wxTitle">서울 날씨 <span class="muted" id="wxTime"></span></h2>
+          <div id="weatherBox"><p class="loading">날씨를 불러오는 중이에요…</p></div>
+        </section>
+        <section class="card" aria-labelledby="airTitle">
+          <h2 class="card-title" id="airTitle">미세먼지 <span class="muted">환경부 기준</span></h2>
+          <div id="airBox"><p class="loading">미세먼지를 불러오는 중이에요…</p></div>
+        </section>
+        <section class="card" aria-labelledby="tipTitle">
+          <h2 class="card-title" id="tipTitle">나가기 전 체크</h2>
+          <ul class="tips" id="tipBox"><li><span>⏳</span>날씨를 보고 알려 드릴게요</li></ul>
+        </section>
+      </aside>
+    </div>
+
+    <!-- API 상자 -->
+    <section class="card api-box" aria-labelledby="apiTitle" style="margin-top:16px">
+      <h2 class="card-title" id="apiTitle">🔌 이 화면이 쓰는 API</h2>
+      <ul id="apiList"><li class="muted">아직 부른 API가 없어요</li></ul>
+    </section>
+
+    <footer class="src">
+      <p>Weather data by <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo.com</a> · 날씨·대기질은 서울시청 좌표 기준 모델 값이에요</p>
+      <p>열차시간표: <a href="https://www.data.go.kr/data/15143847/openapi.do" target="_blank" rel="noopener">공공데이터포털 · 서울교통공사_열차시간표</a> · 서울교통공사 운영 구간(1~9호선)만 있어요</p>
+      <p>공휴일: <a href="https://date.nager.at/" target="_blank" rel="noopener">Nager.Date</a></p>
+      <p>시간표는 정해진 운행 계획이에요. 지연·운휴는 반영되지 않아요</p>
+    </footer>
+  </div>
+
+  <dialog id="keyDialog" aria-labelledby="keyTitle">
+    <h2 id="keyTitle">공공데이터포털 인증키</h2>
+    <div id="keyBody"></div>
+  </dialog>
+  <div class="toast" id="toast" role="status"></div>
+
+  <!-- 인증키 파일: 없으면 화면에서 입력받아요 (config.js 는 git 에 올라가지 않음) -->
   <script src="config.js"></script>
   <script>
     // ───────────────── API 주소는 여기 한 곳에만 ─────────────────
@@ -194,17 +308,30 @@
     const API = {
       forecast: "https://api.open-meteo.com/v1/forecast",                 // 🔌 Open-Meteo 날씨 예보 (키 없음)
       air:      "https://air-quality-api.open-meteo.com/v1/air-quality",  // 🔌 Open-Meteo 대기질 (키 없음)
+      holidays: "https://date.nager.at/api/v3/PublicHolidays",            // 🔌 Nager.Date 공휴일 (키 없음) — 뒤에 /연도/KR
       subway:   "https://apis.data.go.kr/B553766/schedule/getTrainSch",   // 🔌 공공데이터포털 서울교통공사 열차시간표 (인증키 필요)
     };
 
-    const KEY_STORAGE = "myservice_data_go_kr_key";
-    const LINES = ["1호선", "2호선", "3호선", "4호선", "5호선", "6호선", "7호선", "8호선", "9호선"];
+    const LINES = {
+      "1호선": "#0052A4", "2호선": "#00A84D", "3호선": "#EF7C1C", "4호선": "#00A5DE", "5호선": "#996CAC",
+      "6호선": "#CD7C2F", "7호선": "#747F00", "8호선": "#E6186C", "9호선": "#BDB092",
+    };
     // 2호선은 순환선이라 상행/하행 대신 내선/외선을 써요
     const directionsOf = (line) => line === "2호선" ? ["내선", "외선"] : ["상행", "하행"];
+    const STORE = { key: "myservice_data_go_kr_key", fav: "myservice_fav", recent: "myservice_recent", walk: "myservice_walk", cache: "myservice_tt:" };
 
     // ───────────────── 공통 유틸 ─────────────────
     const $ = (id) => document.getElementById(id);
     const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    const pad = (n) => String(n).padStart(2, "0");
+    const ymd = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    const lineNo = (line) => line.replace("호선", "");
+
+    const store = {
+      get(k, fallback) { try { const v = localStorage.getItem(k); return v === null ? fallback : JSON.parse(v); } catch { return fallback; } },
+      set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
+      del(k) { try { localStorage.removeItem(k); } catch {} },
+    };
 
     function buildUrl(base, params) {
       const qs = Object.entries(params)
@@ -214,18 +341,23 @@
     }
     // 화면에 보여 줄 땐 키를 가려요
     const maskKey = (url) => url.replace(/serviceKey=[^&]*/, "serviceKey=****");
+    const errorHtml = (title, detail) => `<div class="error" role="alert"><b>${esc(title)}</b>${esc(detail)}</div>`;
 
-    function errorHtml(title, detail) {
-      return `<div class="error" role="alert"><b>${esc(title)}</b>${esc(detail)}</div>`;
+    let toastTimer;
+    function toast(msg) {
+      $("toast").textContent = msg;
+      $("toast").classList.add("show");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => $("toast").classList.remove("show"), 2400);
     }
 
-    // API 상자 기록 (같은 이름이면 최신 주소로 덮어써요)
+    // API 상자 (같은 이름이면 최신 주소로 덮어써요)
     const apiCalls = new Map();
     function logApi(name, url, ok, note) {
       apiCalls.set(name, { url, ok, note });
       $("apiList").innerHTML = [...apiCalls.entries()].map(([n, c]) => `
         <li>
-          <b>${esc(n)}</b> · ${c.ok ? "성공" : "실패"}${c.note ? ` · ${esc(c.note)}` : ""}
+          <b>${esc(n)}</b> · <span class="${c.ok ? "ok" : "ng"}">${c.ok ? "성공" : "실패"}</span>${c.note ? ` · ${esc(c.note)}` : ""}
           <code>${esc(maskKey(c.url))}</code>
           <a href="${esc(c.url)}" target="_blank" rel="noopener">새 탭에서 원본 JSON 보기</a>
         </li>`).join("");
@@ -244,55 +376,127 @@
       return data;
     }
 
-    // ───────────────── 1. 날씨 ─────────────────
+    // ───────────────── 시간 ─────────────────
+    // 지하철 하루는 새벽 3시에 바뀌어요. 00~02시는 전날 운행일의 24~26시로 봐요
+    function serviceDay(d = new Date()) {
+      const s = new Date(d);
+      if (s.getHours() < 3) s.setDate(s.getDate() - 1);
+      return s;
+    }
+    function nowMinutes() {
+      const d = new Date();
+      const h = d.getHours() < 3 ? d.getHours() + 24 : d.getHours();
+      return h * 60 + d.getMinutes() + d.getSeconds() / 60;
+    }
+    // "05:36:00" → 336, "24:21:30" → 1461
+    function toMinutes(t) {
+      const m = /^(\d{1,2}):?(\d{2}):?(\d{2})?/.exec(String(t || ""));
+      if (!m) return null;
+      let h = +m[1];
+      if (h < 3) h += 24;
+      return h * 60 + +m[2] + (+m[3] || 0) / 60;
+    }
+    const fmt = (min) => `${pad(Math.floor(min / 60) % 24)}:${pad(Math.floor(min % 60))}`;
+
+    // ───────────────── 오늘: 공휴일 + 인사 ─────────────────
+    const today = { holidays: {}, holidayName: "", dayType: "평일", next: null };
+
+    async function loadHolidays() {
+      const sd = serviceDay();
+      const year = sd.getFullYear();
+      const url = `${API.holidays}/${year}/KR`;
+      try {
+        const list = await getJson(url);
+        list.forEach((h) => { today.holidays[h.date] = h.localName || h.name; });
+        logApi("공휴일 (Nager.Date)", url, true, `${list.length}일`);
+        const key = ymd(sd);
+        today.holidayName = today.holidays[key] || "";
+        const upcoming = list.find((h) => h.date > key);
+        if (upcoming) today.next = upcoming;
+      } catch (e) {
+        logApi("공휴일 (Nager.Date)", url, false, e.message);
+      }
+      const dow = sd.getDay();
+      today.dayType = today.holidayName || dow === 0 || dow === 6 ? "주말" : "평일";
+      renderToday();
+    }
+
+    function renderToday() {
+      const d = new Date();
+      const h = d.getHours();
+      $("greet").textContent =
+        h < 5 ? "늦은 밤이에요. 막차 시간을 확인해 보세요" :
+        h < 11 ? "좋은 아침이에요. 출근길을 같이 챙겨요" :
+        h < 16 ? "오후예요. 외근길 열차를 찾아 드릴게요" :
+        "오늘도 수고했어요. 퇴근길을 같이 챙겨요";
+      const days = ["일", "월", "화", "수", "목", "금", "토"];
+      const chips = [`<span class="chip"><b>${d.getMonth() + 1}월 ${d.getDate()}일 (${days[d.getDay()]})</b></span>`];
+      chips.push(today.holidayName
+        ? `<span class="chip">오늘은 <b>${esc(today.holidayName)}</b> · 주말 시간표</span>`
+        : `<span class="chip"><b>${today.dayType}</b> 시간표로 보여 줘요</span>`);
+      if (today.next) {
+        const diff = Math.round((new Date(today.next.date + "T00:00:00") - new Date(ymd(d) + "T00:00:00")) / 86400000);
+        chips.push(`<span class="chip">다음 공휴일 <b>${esc(today.next.localName || today.next.name)}</b> D-${diff}</span>`);
+      }
+      $("todayChips").innerHTML = chips.join("");
+    }
+
+    // ───────────────── 날씨 ─────────────────
     const WMO = {
       0: ["맑음", "☀️"], 1: ["대체로 맑음", "🌤️"], 2: ["구름 조금", "⛅"], 3: ["흐림", "☁️"],
       45: ["안개", "🌫️"], 48: ["서리 안개", "🌫️"],
-      51: ["약한 이슬비", "🌦️"], 53: ["이슬비", "🌦️"], 55: ["강한 이슬비", "🌧️"],
-      56: ["어는 이슬비", "🌧️"], 57: ["강한 어는 이슬비", "🌧️"],
-      61: ["약한 비", "🌦️"], 63: ["비", "🌧️"], 65: ["강한 비", "🌧️"],
-      66: ["어는 비", "🌧️"], 67: ["강한 어는 비", "🌧️"],
+      51: ["약한 이슬비", "🌦️"], 53: ["이슬비", "🌦️"], 55: ["강한 이슬비", "🌧️"], 56: ["어는 이슬비", "🌧️"], 57: ["강한 어는 이슬비", "🌧️"],
+      61: ["약한 비", "🌦️"], 63: ["비", "🌧️"], 65: ["강한 비", "🌧️"], 66: ["어는 비", "🌧️"], 67: ["강한 어는 비", "🌧️"],
       71: ["약한 눈", "🌨️"], 73: ["눈", "🌨️"], 75: ["강한 눈", "❄️"], 77: ["싸락눈", "🌨️"],
-      80: ["약한 소나기", "🌦️"], 81: ["소나기", "🌧️"], 82: ["강한 소나기", "⛈️"],
-      85: ["약한 눈보라", "🌨️"], 86: ["강한 눈보라", "❄️"],
+      80: ["약한 소나기", "🌦️"], 81: ["소나기", "🌧️"], 82: ["강한 소나기", "⛈️"], 85: ["약한 눈보라", "🌨️"], 86: ["강한 눈보라", "❄️"],
       95: ["뇌우", "⛈️"], 96: ["우박 동반 뇌우", "⛈️"], 99: ["강한 우박 뇌우", "⛈️"],
     };
+    const isNight = (hour) => hour < 6 || hour >= 19;
+    const wxIcon = (code, hour) => (code <= 1 && isNight(hour) ? "🌙" : (WMO[code] || ["", "❔"])[1]);
 
-    const tips = { umbrella: null, mask: null, cold: null };
+    const tips = {};
     function renderTips() {
       const list = Object.values(tips).filter(Boolean);
-      $("tipBox").innerHTML = list.length
-        ? `<ul class="tips">${list.map((t) => `<li>${esc(t)}</li>`).join("")}</ul>`
-        : "";
+      $("tipBox").innerHTML = (list.length ? list : [["👍", "특별히 챙길 건 없어요. 가볍게 나가요"]])
+        .map(([ic, t]) => `<li><span aria-hidden="true">${ic}</span><span>${esc(t)}</span></li>`).join("");
     }
 
     async function loadWeather() {
       const url = buildUrl(API.forecast, {
         latitude: SEOUL.lat, longitude: SEOUL.lon,
-        current: "temperature_2m,apparent_temperature,weather_code",
-        hourly: "precipitation_probability",
+        current: "temperature_2m,apparent_temperature,weather_code,wind_speed_10m",
+        hourly: "temperature_2m,precipitation_probability,weather_code",
         forecast_hours: 12,
         timezone: "Asia/Seoul",
       });
       try {
         const d = await getJson(url);
         const c = d.current;
-        const [label, icon] = WMO[c.weather_code] || ["알 수 없음", "❔"];
-        const rainMax = Math.max(...(d.hourly?.precipitation_probability || [0]));
+        const hourNow = +c.time.slice(11, 13);
+        const [label] = WMO[c.weather_code] || ["알 수 없음"];
+        const hours = d.hourly.time.map((t, i) => ({
+          h: +t.slice(11, 13), temp: d.hourly.temperature_2m[i], pop: d.hourly.precipitation_probability[i] ?? 0, code: d.hourly.weather_code[i],
+        }));
+        const rainMax = Math.max(0, ...hours.map((x) => x.pop));
+        const temps = hours.map((x) => x.temp);
+        $("wxTime").textContent = `${c.time.slice(11, 16)} 기준`;
         $("weatherBox").innerHTML = `
-          <div class="wx-main">
-            <div class="wx-icon" aria-hidden="true">${icon}</div>
+          <div class="wx">
+            <div class="ic" aria-hidden="true">${wxIcon(c.weather_code, hourNow)}</div>
             <div>
-              <div class="wx-temp">${Math.round(c.temperature_2m)}°C</div>
-              <div>${esc(label)} · 체감 ${Math.round(c.apparent_temperature)}°C</div>
+              <div class="t">${Math.round(c.temperature_2m)}°</div>
+              <div class="muted">${esc(label)} · 체감 ${Math.round(c.apparent_temperature)}° · 최저 ${Math.round(Math.min(...temps))}° / 최고 ${Math.round(Math.max(...temps))}° (12시간)</div>
             </div>
           </div>
-          <div class="pills" style="margin-top:10px">
-            <span class="pill">앞으로 12시간 최고 강수확률 ${rainMax}%</span>
-          </div>
-          <p class="muted">기준 시각 ${esc(c.time.replace("T", " "))} (한국 시간)</p>`;
-        tips.umbrella = rainMax >= 50 ? `우산을 챙기세요. 12시간 안에 강수확률이 ${rainMax}%까지 올라가요` : null;
-        tips.cold = c.apparent_temperature <= 5 ? "체감온도가 낮아요. 겉옷을 챙기세요" : null;
+          <div class="strip" aria-label="앞으로 12시간 예보">
+            ${hours.map((x) => `<div><div class="h">${x.h}시</div><div class="e" aria-hidden="true">${wxIcon(x.code, x.h)}</div><div>${Math.round(x.temp)}°</div><div class="p">${x.pop}%</div></div>`).join("")}
+          </div>`;
+        tips.umbrella = rainMax >= 50 ? ["☂️", `우산을 챙기세요. 12시간 안에 강수확률이 ${rainMax}%까지 올라가요`]
+          : rainMax >= 30 ? ["🌂", `작은 우산이 있으면 좋아요. 강수확률 최고 ${rainMax}%`] : null;
+        tips.cold = c.apparent_temperature <= 0 ? ["🧣", "체감온도가 영하예요. 목도리·장갑을 챙기세요"]
+          : c.apparent_temperature <= 8 ? ["🧥", "쌀쌀해요. 겉옷을 챙기세요"] : null;
+        tips.hot = c.apparent_temperature >= 30 ? ["💧", "더워요. 물을 챙기세요"] : null;
+        tips.wind = c.wind_speed_10m >= 30 ? ["💨", "바람이 강해요"] : null;
         renderTips();
         logApi("날씨 예보 (Open-Meteo)", url, true);
       } catch (e) {
@@ -302,38 +506,24 @@
     }
 
     // 한국 환경부 기준
-    function gradePm10(v) {
-      if (v <= 30) return ["좋음", "g-good"];
-      if (v <= 80) return ["보통", "g-normal"];
-      if (v <= 150) return ["나쁨", "g-bad"];
-      return ["매우나쁨", "g-worst"];
-    }
-    function gradePm25(v) {
-      if (v <= 15) return ["좋음", "g-good"];
-      if (v <= 35) return ["보통", "g-normal"];
-      if (v <= 75) return ["나쁨", "g-bad"];
-      return ["매우나쁨", "g-worst"];
-    }
+    const gradePm10 = (v) => v <= 30 ? ["좋음", "g-good"] : v <= 80 ? ["보통", "g-normal"] : v <= 150 ? ["나쁨", "g-bad"] : ["매우나쁨", "g-worst"];
+    const gradePm25 = (v) => v <= 15 ? ["좋음", "g-good"] : v <= 35 ? ["보통", "g-normal"] : v <= 75 ? ["나쁨", "g-bad"] : ["매우나쁨", "g-worst"];
 
     async function loadAir() {
-      const url = buildUrl(API.air, {
-        latitude: SEOUL.lat, longitude: SEOUL.lon,
-        current: "pm10,pm2_5",
-        timezone: "Asia/Seoul",
-      });
+      const url = buildUrl(API.air, { latitude: SEOUL.lat, longitude: SEOUL.lon, current: "pm10,pm2_5", timezone: "Asia/Seoul" });
       try {
         const d = await getJson(url);
         const { pm10, pm2_5, time } = d.current;
         const [g10, c10] = gradePm10(pm10);
         const [g25, c25] = gradePm25(pm2_5);
         $("airBox").innerHTML = `
-          <div class="pills">
-            <span class="pill">미세먼지(PM10) ${Math.round(pm10)}㎍/㎥ <span class="${c10}">${g10}</span></span>
-            <span class="pill">초미세먼지(PM2.5) ${Math.round(pm2_5)}㎍/㎥ <span class="${c25}">${g25}</span></span>
+          <div class="air">
+            <div><div class="muted">미세먼지 PM10</div><div class="v ${c10}">${g10}</div><div class="muted">${Math.round(pm10)}㎍/㎥</div></div>
+            <div><div class="muted">초미세먼지 PM2.5</div><div class="v ${c25}">${g25}</div><div class="muted">${Math.round(pm2_5)}㎍/㎥</div></div>
           </div>
-          <p class="muted">등급: 한국 환경부 기준 · 기준 시각 ${esc(time.replace("T", " "))} · 모델 추정값이라 측정소 값과 다를 수 있어요</p>`;
+          <p class="muted" style="margin:10px 0 0">${esc(time.slice(11, 16))} 기준 모델 추정값이라 측정소 값과 다를 수 있어요</p>`;
         const bad = ["나쁨", "매우나쁨"];
-        tips.mask = bad.includes(g10) || bad.includes(g25) ? "미세먼지가 나빠요. 마스크를 챙기세요" : null;
+        tips.mask = bad.includes(g10) || bad.includes(g25) ? ["😷", "미세먼지가 나빠요. 마스크를 챙기세요"] : null;
         renderTips();
         logApi("대기질 (Open-Meteo)", url, true);
       } catch (e) {
@@ -342,204 +532,330 @@
       }
     }
 
-    // ───────────────── 2. 인증키 ─────────────────
-    function readStoredKey() {
-      try { return localStorage.getItem(KEY_STORAGE) || ""; } catch { return ""; }
-    }
+    // ───────────────── 인증키 ─────────────────
     function getKey() {
       const fromConfig = (window.APP_CONFIG?.DATA_GO_KR_KEY || "").trim();
       if (fromConfig && fromConfig !== "YOUR_API_KEY") return { key: fromConfig, from: "config" };
-      const stored = readStoredKey().trim();
+      const stored = String(store.get(STORE.key, "") || "").trim();
       return stored ? { key: stored, from: "browser" } : { key: "", from: "none" };
     }
     // Decoding 키는 인코딩해서, 이미 인코딩된(Encoding) 키는 그대로 써요
     const encodeKey = (k) => /%[0-9A-Fa-f]{2}/.test(k) ? k : encodeURIComponent(k);
 
-    function renderKeyStatus() {
+    function renderKey() {
       const { from } = getKey();
+      $("keyDot").className = `dot ${from === "none" ? "no" : "ok"}`;
+      const close = `<button class="btn ghost" type="button" data-close>닫기</button>`;
       if (from === "config") {
-        $("keyStatus").innerHTML = `<p class="muted">config.js 의 인증키를 쓰고 있어요</p>`;
-        return;
-      }
-      if (from === "browser") {
-        $("keyStatus").innerHTML = `
-          <p class="muted">이 브라우저에 저장한 인증키를 쓰고 있어요</p>
-          <button type="button" id="keyClear">저장한 키 지우기</button>`;
-        $("keyClear").onclick = () => {
-          try { localStorage.removeItem(KEY_STORAGE); } catch {}
-          renderKeyStatus();
+        $("keyBody").innerHTML = `<p class="muted">config.js 의 인증키를 쓰고 있어요. 이 파일은 깃허브에 올라가지 않아요</p><div class="foot"><span></span>${close}</div>`;
+      } else if (from === "browser") {
+        $("keyBody").innerHTML = `<p class="muted">이 브라우저에 저장한 인증키를 쓰고 있어요</p>
+          <div class="foot"><button class="btn ghost" type="button" id="keyClear">저장한 키 지우기</button>${close}</div>`;
+        $("keyClear").onclick = () => { store.del(STORE.key); renderKey(); toast("저장한 키를 지웠어요"); };
+      } else {
+        $("keyBody").innerHTML = `
+          <p class="muted">지하철 시간표를 보려면 공공데이터포털 마이페이지의 <b>일반 인증키(Decoding)</b>가 필요해요. 키는 이 브라우저에만 저장되고 공공데이터포털에만 보내요</p>
+          <form class="row" id="keyForm">
+            <input class="field" type="password" id="keyInput" placeholder="일반 인증키 붙여넣기" aria-label="공공데이터포털 인증키" autocomplete="off" required>
+            <button class="btn" type="submit">저장하기</button>
+          </form>
+          <div class="foot"><a href="https://www.data.go.kr/data/15143847/openapi.do" target="_blank" rel="noopener">인증키 신청하러 가기</a>${close}</div>`;
+        $("keyForm").onsubmit = (ev) => {
+          ev.preventDefault();
+          const v = $("keyInput").value.trim();
+          if (!v) return;
+          store.set(STORE.key, v);
+          renderKey();
+          $("keyDialog").close();
+          toast("인증키를 저장했어요");
         };
-        return;
       }
-      $("keyStatus").innerHTML = `
-        <p class="muted">공공데이터포털 마이페이지의 <b>일반 인증키(Decoding)</b>를 넣어 주세요. 키는 이 브라우저에만 저장되고 공공데이터포털에만 보내요</p>
-        <form class="key-row" id="keyForm">
-          <input type="password" id="keyInput" placeholder="일반 인증키 붙여넣기" aria-label="공공데이터포털 인증키" autocomplete="off" required>
-          <button type="submit">저장하기</button>
-        </form>`;
-      $("keyForm").onsubmit = (ev) => {
-        ev.preventDefault();
-        const v = $("keyInput").value.trim();
-        if (!v) return;
-        try { localStorage.setItem(KEY_STORAGE, v); } catch {}
-        renderKeyStatus();
-      };
+      $("keyBody").querySelectorAll("[data-close]").forEach((b) => (b.onclick = () => $("keyDialog").close()));
     }
 
-    // ───────────────── 3. 지하철 시간표 ─────────────────
-    // "05:31:00", "053100", "0531" 모두 처리. 자정 넘은 열차(00~02시)는 뒤로 보내요
-    function toMinutes(t) {
-      const digits = String(t || "").replace(/\D/g, "");
-      if (digits.length < 4) return null;
-      let h = Number(digits.slice(0, 2));
-      const m = Number(digits.slice(2, 4));
-      if (h < 3) h += 24;
-      return h * 60 + m;
+    // ───────────────── 즐겨찾기 · 최근 검색 ─────────────────
+    const sameStop = (a, b) => a.line === b.line && a.stn === b.stn;
+    const getFavs = () => store.get(STORE.fav, []);
+    const isFav = (s) => getFavs().some((f) => sameStop(f, s));
+    function toggleFav(s) {
+      let favs = getFavs();
+      if (favs.some((f) => sameStop(f, s))) {
+        favs = favs.filter((f) => !sameStop(f, s));
+        toast("즐겨찾기에서 뺐어요");
+      } else {
+        favs = [s, ...favs].slice(0, 8);
+        toast("즐겨찾기에 넣었어요");
+      }
+      store.set(STORE.fav, favs);
+      renderQuick();
     }
-    const fmt = (min) => `${String(Math.floor(min / 60) % 24).padStart(2, "0")}:${String(min % 60).padStart(2, "0")}`;
-    const nowMinutes = () => {
-      const d = new Date();
-      let h = d.getHours();
-      if (h < 3) h += 24;
-      return h * 60 + d.getMinutes();
-    };
-    const asArray = (x) => (Array.isArray(x) ? x : x ? [x] : []);
-
-    async function fetchDirection(line, station, day, dir) {
-      const { key } = getKey();
-      const url = buildUrl(API.subway, {
-        serviceKey: encodeKey(key),
-        dataType: "JSON",
-        pageNo: 1,
-        numOfRows: 1000,
-        tmprTmtblYn: "N",
-        upbdnbSe: dir,
-        wkndSe: day,
-        lineNm: line,
-        stnNm: station,
+    function pushRecent(s) {
+      const list = [s, ...store.get(STORE.recent, []).filter((r) => !sameStop(r, s))].slice(0, 5);
+      store.set(STORE.recent, list);
+      renderQuick();
+    }
+    const stopChip = (s, pre = "") =>
+      `<button type="button" class="q" data-line="${esc(s.line)}" data-stn="${esc(s.stn)}">${pre}<span class="ln" style="background:${LINES[s.line] || "#888"}">${esc(lineNo(s.line))}</span>${esc(s.stn)}</button>`;
+    function renderQuick() {
+      const favs = getFavs();
+      const recent = store.get(STORE.recent, []).filter((r) => !favs.some((f) => sameStop(f, r)));
+      $("favRow").innerHTML = favs.length ? `<span class="label">즐겨찾기</span>${favs.map((s) => stopChip(s, "★ ")).join("")}` : "";
+      $("recentRow").innerHTML = recent.length ? `<span class="label">최근</span>${recent.map((s) => stopChip(s)).join("")}` : "";
+      $("stnList").innerHTML = [...new Set([...favs, ...recent].map((s) => s.stn))].map((n) => `<option value="${esc(n)}">`).join("");
+      document.querySelectorAll(".quick [data-stn]").forEach((b) => {
+        b.onclick = () => { $("lineSel").value = b.dataset.line; $("stnInput").value = b.dataset.stn; search(); };
       });
-      const name = `열차시간표 ${dir} (공공데이터포털)`;
+    }
+
+    // ───────────────── 지하철 시간표 ─────────────────
+    const asArray = (x) => (Array.isArray(x) ? x : x ? [x] : []);
+    const nowStamp = () => { const d = new Date(); return `${ymd(d)}T${pad(d.getHours())}:${pad(d.getMinutes())}:00`; };
+
+    // 같은 역·방향은 하루 한 번만 부르고 이 브라우저에 저장해 둬요 (호출 수 아끼기)
+    function cacheKey(line, stn, day, dir) { return `${STORE.cache}${ymd(serviceDay())}|${line}|${stn}|${day}|${dir}`; }
+    function cleanOldCache() {
       try {
-        const d = await getJson(url);
-        const header = d?.response?.header || d?.header;
-        const body = d?.response?.body || d?.body;
-        const code = String(header?.resultCode ?? "");
-        if (code && !["0", "00", "200"].includes(code) && code !== "03") {
-          throw new Error(`${header?.resultMsg || "오류"} (코드 ${code})`);
+        const prefix = `${STORE.cache}${ymd(serviceDay())}|`;
+        Object.keys(localStorage).filter((k) => k.startsWith(STORE.cache) && !k.startsWith(prefix)).forEach((k) => localStorage.removeItem(k));
+      } catch {}
+    }
+    const slim = (i) => ({ stnNm: i.stnNm, dep: i.trainDptreTm, arr: i.trainArvlTm, to: i.arvlStnNm, exp: i.etrnYn, no: i.trainno, ymd: i.crtrYmd });
+
+    async function fetchDirection(line, stn, day, dir) {
+      const name = `열차시간표 ${dir} (공공데이터포털)`;
+      const ck = cacheKey(line, stn, day, dir);
+      const cached = store.get(ck, null);
+      if (cached) {
+        logApi(name, cached.url, true, `${cached.items.length}건 · 오늘 저장해 둔 결과`);
+        return { dir, items: cached.items };
+      }
+      const { key } = getKey();
+      let items = [];
+      let url = "";
+      try {
+        // searchDt 에 지금 시각을 넣으면 지금 유효한 시간표만 와요
+        for (let page = 1; page <= 5; page++) {
+          url = buildUrl(API.subway, {
+            serviceKey: encodeKey(key), dataType: "JSON", pageNo: page, numOfRows: 1000,
+            tmprTmtblYn: "N", upbdnbSe: dir, wkndSe: day, lineNm: line, stnNm: stn, searchDt: nowStamp(),
+          });
+          const d = await getJson(url);
+          const header = d?.response?.header;
+          const body = d?.response?.body;
+          const code = String(header?.resultCode ?? "");
+          if (code && code !== "00" && code !== "03") throw new Error(`${header?.resultMsg || "오류"} (코드 ${code})`);
+          const got = asArray(body?.items?.item);
+          items = items.concat(got.map(slim));
+          if (!got.length || items.length >= Number(body?.totalCount || 0)) break;
         }
-        const items = asArray(body?.items?.item ?? body?.items);
-        logApi(name, url, true, `${items.length}건 / 전체 ${body?.totalCount ?? "?"}건`);
-        return { dir, items, total: Number(body?.totalCount ?? items.length) };
+        logApi(name, url, true, `${items.length}건`);
+        store.set(ck, { url, items });
+        return { dir, items };
       } catch (e) {
         logApi(name, url, false, e.message);
         return { dir, error: e.message };
       }
     }
 
-    let lastResult = null;
-
-    function renderSubway(selectedStation) {
-      const { results, station } = lastResult;
-      const all = results.flatMap((r) => r.items || []);
-      const names = [...new Set(all.map((i) => i.stnNm).filter(Boolean))];
-      // 역 이름은 "포함" 검색이라 여러 역이 나올 수 있어요. 정확히 같은 역을 먼저 골라요
-      const pick = selectedStation
-        || names.find((n) => n === station || n === `${station}역` || n.replace(/\(.*\)/, "") === station)
-        || names[0];
-
-      let html = "";
-      if (names.length > 1) {
-        html += `<div class="stations" role="group" aria-label="역 선택">${names.map((n) =>
-          `<button type="button" class="${n === pick ? "on" : ""}" data-stn="${esc(n)}">${esc(n)}</button>`).join("")}</div>`;
-      }
-
-      const now = nowMinutes();
-      let baseDate = "";
-      html += `<div class="dirs">` + results.map((r) => {
-        if (r.error) {
-          return `<div class="dir"><h3>${esc(r.dir)}</h3>${errorHtml("시간표를 불러오지 못했어요", r.error + hintFor(r.error))}</div>`;
-        }
-        const trains = r.items
-          .filter((i) => i.stnNm === pick)
-          .map((i) => ({ ...i, min: toMinutes(i.trainDptreTm) ?? toMinutes(i.trainArvlTm) }))
-          .filter((i) => i.min !== null)
-          .sort((a, b) => a.min - b.min);
-        if (!baseDate) baseDate = trains.find((t) => t.crtrYmd)?.crtrYmd || "";
-        if (!trains.length) {
-          return `<div class="dir"><h3>${esc(r.dir)}</h3><p class="muted">이 방향 시간표가 없어요. 종착역이거나 데이터에 없는 역일 수 있어요</p></div>`;
-        }
-        const upcoming = trains.filter((t) => t.min >= now).slice(0, 3);
-        const nextHtml = upcoming.length
-          ? `<ul class="next">${upcoming.map((t) => `
-              <li>
-                <span><span class="time">${fmt(t.min)}</span>${t.etrnYn === "Y" ? '<span class="tag-exp">급행</span>' : ""}
-                  <span class="to"> ${esc(t.arvlStnNm || "")}행</span></span>
-                <span class="in">${t.min - now}분 뒤</span>
-              </li>`).join("")}</ul>`
-          : `<p class="muted">오늘 남은 열차가 없어요</p>`;
-        const byHour = {};
-        trains.forEach((t) => { (byHour[Math.floor(t.min / 60) % 24] ||= []).push(t); });
-        const hoursHtml = Object.entries(byHour)
-          .sort((a, b) => ((+a[0] + 21) % 24) - ((+b[0] + 21) % 24))
-          .map(([h, ts]) => `<div><b>${String(h).padStart(2, "0")}</b><span>${ts.map((t) => String(t.min % 60).padStart(2, "0") + (t.etrnYn === "Y" ? "(급)" : "")).join(" ")}</span></div>`)
-          .join("");
-        const cut = r.total > r.items.length ? `<p class="muted">전체 ${r.total}건 중 ${r.items.length}건만 받았어요</p>` : "";
-        return `<div class="dir">
-            <h3>${esc(r.dir)} · ${esc(pick)}</h3>
-            ${nextHtml}
-            <details><summary>전체 시간표 ${trains.length}대 보기</summary><div class="hours">${hoursHtml}</div></details>
-            ${cut}
-          </div>`;
-      }).join("") + `</div>`;
-
-      if (!names.length && results.every((r) => !r.error)) {
-        html = `<p class="muted">"${esc(station)}" 역을 찾지 못했어요. 호선이 맞는지, 서울교통공사 운영 구간인지 확인해 주세요. 아래 API 상자의 원본 JSON에서 데이터가 있는지 볼 수 있어요</p>`;
-      } else {
-        const d = baseDate.replace(/^(\d{4})(\d{2})(\d{2})$/, "$1.$2.$3");
-        html += `<p class="muted" style="margin-top:10px">${esc(lastResult.line)} · ${esc(lastResult.day)} 시간표${d ? ` · 기준일자 ${esc(d)}` : ""}</p>`;
-      }
-
-      $("subwayBox").innerHTML = html;
-      $("subwayBox").querySelectorAll("[data-stn]").forEach((b) => {
-        b.onclick = () => renderSubway(b.dataset.stn);
-      });
-    }
+    const state = { result: null, pick: "", dest: {}, showAll: {} };
 
     function hintFor(msg) {
-      if (/SERVICE_KEY|서비스키|인증키|401|403/i.test(msg)) {
-        return " · 키를 확인해 주세요. 활용신청 승인 직후에는 반영까지 1시간쯤 걸릴 수 있어요";
-      }
+      if (/SERVICE_KEY|서비스키|인증키|401|403/i.test(msg)) return " · 인증키를 확인해 주세요. 활용신청 승인 직후에는 반영까지 1시간쯤 걸릴 수 있어요";
+      if (/Failed to fetch|NetworkError/i.test(msg)) return " · 인터넷 연결을 확인하고 다시 시도해 주세요";
       return "";
     }
 
-    async function searchSubway(ev) {
-      ev.preventDefault();
-      const station = $("stnInput").value.trim().replace(/역$/, "");
-      const line = $("lineSel").value;
-      const day = $("dayKind").value;
-      if (!station) return;
-      if (!getKey().key) {
-        $("subwayBox").innerHTML = errorHtml("인증키가 없어요", "위 인증키 칸에 공공데이터포털 일반 인증키를 먼저 저장해 주세요");
-        $("keyCard").scrollIntoView({ behavior: "smooth" });
+    function trainsFor(r) {
+      // 이 역에서 끝나는 열차(출발 시각 없음)는 탈 수 없어서 빼요
+      return r.items
+        .filter((i) => i.stnNm === state.pick && i.dep && i.to !== i.stnNm)
+        .map((i) => ({ ...i, min: toMinutes(i.dep) }))
+        .filter((i) => i.min !== null)
+        .sort((a, b) => a.min - b.min);
+    }
+
+    function dirCard(r) {
+      if (r.error) {
+        return `<article class="dir"><div class="dir-top"><span class="dir-name">${esc(r.dir)}</span></div>${errorHtml("시간표를 불러오지 못했어요", r.error + hintFor(r.error))}</article>`;
+      }
+      const all = trainsFor(r);
+      if (!all.length) {
+        return `<article class="dir"><div class="dir-top"><span class="dir-name">${esc(r.dir)}</span></div><p class="muted">이 방향으로 출발하는 열차가 없어요. 종착역일 수 있어요</p></article>`;
+      }
+      const dests = Object.entries(all.reduce((m, t) => ((m[t.to] = (m[t.to] || 0) + 1), m), {}))
+        .filter(([, n]) => n >= 3).sort((a, b) => b[1] - a[1]);
+      const dest = state.dest[r.dir] || "";
+      const trains = dest ? all.filter((t) => t.to === dest) : all;
+      const now = nowMinutes();
+      const walk = Number(store.get(STORE.walk, 0)) || 0;
+      const upcoming = trains.filter((t) => t.min >= now);
+      const first = upcoming[0];
+      const firstLast = `첫차 ${fmt(all[0].min)} · 막차 ${fmt(all[all.length - 1].min)}`;
+
+      let head;
+      if (!first) {
+        head = `<div class="eta"><span class="soon" style="color:var(--sub)">운행 종료</span></div><div class="eta-meta">오늘 남은 열차가 없어요</div>`;
+      } else {
+        const left = Math.floor(first.min - now);
+        head = `
+          <div class="eta">${left < 1 ? `<span class="soon">곧 출발</span>` : `<span class="big">${left}</span><span class="unit">분 뒤</span>`}</div>
+          <div class="eta-meta"><b>${fmt(first.min)}</b> 출발 · ${esc(first.to)}행 ${first.exp === "Y" ? '<span class="exp">급행</span>' : ""}</div>`;
+      }
+
+      let leave = "";
+      if (walk > 0 && upcoming.length) {
+        const catchable = upcoming.find((t) => t.min - walk >= now);
+        if (catchable) {
+          const leaveIn = Math.floor(catchable.min - walk - now);
+          leave = `<div class="leave">걸어서 ${walk}분이면 <b>${fmt(catchable.min)}</b> 열차를 탈 수 있어요 · <b>${leaveIn < 1 ? "지금 바로" : `${leaveIn}분 안에`}</b> 나가세요</div>`;
+        } else {
+          leave = `<div class="leave">지금 나가면 탈 수 있는 열차가 없어요</div>`;
+        }
+      }
+
+      const more = upcoming.slice(1, 4).map((t) =>
+        `<li><span>${fmt(t.min)} · ${esc(t.to)}행 ${t.exp === "Y" ? '<span class="exp">급행</span>' : ""}</span><span>${Math.floor(t.min - now)}분 뒤</span></li>`).join("");
+
+      const destHtml = dests.length > 1
+        ? `<div class="dests" role="group" aria-label="행선지 고르기">
+            <button type="button" class="${dest ? "" : "on"}" data-dir="${esc(r.dir)}" data-dest="">전체</button>
+            ${dests.map(([d, n]) => `<button type="button" class="${d === dest ? "on" : ""}" data-dir="${esc(r.dir)}" data-dest="${esc(d)}">${esc(d)}행 ${n}</button>`).join("")}
+          </div>` : "";
+
+      const open = !!state.showAll[r.dir];
+      let tt = "";
+      if (open) {
+        const byHour = new Map();
+        trains.forEach((t) => {
+          const h = Math.floor(t.min / 60);
+          if (!byHour.has(h)) byHour.set(h, []);
+          byHour.get(h).push(t);
+        });
+        const nowH = Math.floor(now / 60);
+        tt = `<div class="tt">${[...byHour.entries()].map(([h, ts]) => `
+            <div class="${h === nowH ? "now" : ""}"><b>${pad(h % 24)}</b><span>${ts.map((t) =>
+              `<em class="${t.min < now ? "past" : ""}" style="font-style:normal">${pad(Math.floor(t.min % 60))}${t.exp === "Y" ? "<sup>급</sup>" : ""}</em>`).join("")}</span></div>`).join("")}
+          </div>`;
+      }
+
+      return `
+        <article class="dir">
+          <div class="dir-top"><span class="dir-name">${esc(r.dir)}</span><span class="muted">${firstLast}</span></div>
+          ${head}
+          ${leave}
+          ${more ? `<ul class="more">${more}</ul>` : ""}
+          ${destHtml}
+          <button type="button" class="linkbtn" data-all="${esc(r.dir)}" aria-expanded="${open}">${open ? "전체 시간표 접기" : `전체 시간표 보기 (${trains.length}대)`}</button>
+          ${tt}
+        </article>`;
+    }
+
+    function renderResult() {
+      const res = state.result;
+      if (!res) return;
+      document.documentElement.style.setProperty("--line-color", LINES[res.line] || "var(--brand)");
+      const allItems = res.results.flatMap((r) => r.items || []);
+      const names = [...new Set(allItems.map((i) => i.stnNm).filter(Boolean))];
+      const box = $("resultCard");
+
+      if (res.results.every((r) => r.error)) {
+        box.innerHTML = errorHtml("시간표를 불러오지 못했어요", res.results[0].error + hintFor(res.results[0].error));
         return;
       }
-      $("subwayBox").innerHTML = `<p class="loading">${esc(line)} ${esc(station)} 시간표를 불러오는 중이에요…</p>`;
+      if (!names.length) {
+        box.innerHTML = `<div class="empty"><div class="ic" aria-hidden="true">🔍</div>
+          <p><b>${esc(res.line)} "${esc(res.stn)}"</b> 역을 찾지 못했어요</p>
+          <p class="muted">호선이 맞는지, 서울교통공사 운영 구간인지 확인해 주세요. 아래 API 상자의 원본 JSON에서 데이터를 볼 수 있어요</p></div>`;
+        return;
+      }
+      // 역 이름은 "포함" 검색이라 여러 역이 나올 수 있어요 (예: 강남 → 강남, 강남구청)
+      if (!names.includes(state.pick)) {
+        state.pick = names.find((n) => n === res.stn || n === `${res.stn}역`) || names[0];
+      }
+      const stop = { line: res.line, stn: state.pick };
+      const ymdBase = allItems.find((i) => i.ymd)?.ymd || "";
+      const baseTxt = ymdBase.replace(/^(\d{4})(\d{2})(\d{2})$/, "$1.$2.$3");
+
+      box.innerHTML = `
+        <div class="stn-head">
+          <span class="ln-badge">${esc(res.line)}</span>
+          <span class="stn-name">${esc(state.pick)}</span>
+          <span class="muted">${esc(res.day === "주말" ? "주말·공휴일" : "평일")} 시간표</span>
+          <div class="acts">
+            <button type="button" class="icon-btn star ${isFav(stop) ? "on" : ""}" id="favBtn" aria-pressed="${isFav(stop)}">${isFav(stop) ? "★ 즐겨찾기" : "☆ 즐겨찾기"}</button>
+            <button type="button" class="icon-btn" id="shareBtn">링크 복사</button>
+          </div>
+        </div>
+        ${names.length > 1 ? `<div class="stations" role="group" aria-label="역 고르기">${names.map((n) =>
+          `<button type="button" class="${n === state.pick ? "on" : ""}" data-pick="${esc(n)}">${esc(n)}</button>`).join("")}</div>` : ""}
+        <div class="dirs">${res.results.map(dirCard).join("")}</div>
+        <p class="muted" style="margin:12px 0 0">${baseTxt ? `시간표 기준일자 ${esc(baseTxt)} · ` : ""}${fmt(nowMinutes())} 기준 · 30초마다 남은 시간을 다시 계산해요</p>`;
+
+      $("favBtn").onclick = () => { toggleFav(stop); renderResult(); };
+      $("shareBtn").onclick = async () => {
+        try { await navigator.clipboard.writeText(location.href); toast("이 역 링크를 복사했어요"); }
+        catch { toast("링크 복사를 못 했어요. 주소창의 주소를 복사해 주세요"); }
+      };
+      box.querySelectorAll("[data-pick]").forEach((b) => (b.onclick = () => { state.pick = b.dataset.pick; state.dest = {}; renderResult(); }));
+      box.querySelectorAll("[data-dest]").forEach((b) => (b.onclick = () => { state.dest[b.dataset.dir] = b.dataset.dest; renderResult(); }));
+      box.querySelectorAll("[data-all]").forEach((b) => (b.onclick = () => { state.showAll[b.dataset.all] = !state.showAll[b.dataset.all]; renderResult(); }));
+    }
+
+    async function search() {
+      const stn = $("stnInput").value.trim().replace(/역$/, "");
+      const line = $("lineSel").value;
+      const day = $("dayKind").value;
+      if (!stn) { $("stnInput").focus(); return; }
+      if (!getKey().key) {
+        $("resultCard").innerHTML = errorHtml("인증키가 필요해요", "오른쪽 위 인증키 버튼에서 공공데이터포털 일반 인증키를 먼저 저장해 주세요");
+        renderKey();
+        $("keyDialog").showModal();
+        return;
+      }
+      const params = new URLSearchParams({ line, stn, day });
+      history.replaceState(null, "", `?${params}`);
+      $("resultCard").innerHTML = `<p class="loading">${esc(line)} ${esc(stn)} 시간표를 불러오는 중이에요…</p>`;
       // 방향마다 따로 불러서 한쪽이 실패해도 다른 쪽은 보여요
-      const results = await Promise.all(directionsOf(line).map((dir) => fetchDirection(line, station, day, dir)));
-      lastResult = { results, station, line, day };
-      renderSubway();
+      const results = await Promise.all(directionsOf(line).map((dir) => fetchDirection(line, stn, day, dir)));
+      state.result = { results, stn, line, day };
+      state.pick = "";
+      state.dest = {};
+      state.showAll = {};
+      renderResult();
+      const found = results.flatMap((r) => r.items || []).length;
+      if (found) pushRecent({ line, stn: state.pick || stn });
     }
 
     // ───────────────── 시작 ─────────────────
-    $("lineSel").innerHTML = LINES.map((l) => `<option>${l}</option>`).join("");
+    $("lineSel").innerHTML = Object.keys(LINES).map((l) => `<option>${l}</option>`).join("");
     $("lineSel").value = "2호선";
-    const dow = new Date().getDay();
-    $("dayKind").value = dow === 0 || dow === 6 ? "주말" : "평일";
-    $("searchForm").addEventListener("submit", searchSubway);
+    $("walkMin").value = store.get(STORE.walk, "") || "";
+    $("walkMin").addEventListener("input", () => {
+      const v = Math.max(0, Math.min(60, Number($("walkMin").value) || 0));
+      store.set(STORE.walk, v);
+      renderResult();
+    });
+    $("searchForm").addEventListener("submit", (ev) => { ev.preventDefault(); search(); });
+    $("dayKind").addEventListener("change", () => { $("dayKind").dataset.touched = "1"; });
+    $("openKey").onclick = () => { renderKey(); $("keyDialog").showModal(); };
 
-    renderKeyStatus();
+    cleanOldCache();
+    renderKey();
+    renderQuick();
+    renderToday();
     loadWeather();
     loadAir();
+
+    // 공휴일을 확인한 뒤 평일/주말을 정하고, 공유 링크(?line=&stn=)로 들어왔으면 바로 검색해요
+    loadHolidays().then(() => {
+      const p = new URLSearchParams(location.search);
+      if (!$("dayKind").dataset.touched) $("dayKind").value = p.get("day") === "주말" || p.get("day") === "평일" ? p.get("day") : today.dayType;
+      if (p.get("line") && LINES[p.get("line")]) $("lineSel").value = p.get("line");
+      if (p.get("stn")) { $("stnInput").value = p.get("stn"); search(); }
+      else if (getFavs()[0]) { const f = getFavs()[0]; $("lineSel").value = f.line; $("stnInput").value = f.stn; search(); }
+    });
+
+    setInterval(() => { renderResult(); renderToday(); }, 30000);
   </script>
 </body>
 </html>
